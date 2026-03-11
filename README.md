@@ -1,87 +1,63 @@
-# PurAI Chat 🌟
+# PurAI – Express.js + HTMX
 
-Website chat AI modern berbasis **FastAPI + HTMX**, terkoneksi ke API PurAI streaming.
+Port dari FastAPI Python ke **Node.js + Express + HTMX**.
 
-## Fitur
-
-- ✅ **Streaming SSE** – respons AI tampil real-time karakter demi karakter
-- ✅ **Markdown rendering** – tabel, kode, heading, bold, italic otomatis di-render
-- ✅ **Mobile-first UI** – desain seperti aplikasi chat native
-- ✅ **Multi-model** – Gemini 3 Flash, Gemini Pro, GPT-4o Mini
-- ✅ **Multi-mode** – Standard, Creative, Precise
-- ✅ **Riwayat chat** – disimpan di localStorage
-- ✅ **Anti-bot** – token HMAC per-session + rate limiting
-- ✅ **Anti-RE** – devtools detection, console poisoning, right-click blocking
-
-## Struktur
+## Struktur Proyek
 
 ```
-purai/
-├── main.py                    # FastAPI app utama
-├── requirements.txt
-├── static/
-│   ├── css/
-│   │   └── main.css           # Desain dark luxury
-│   └── js/
-│       ├── anti-re.js         # Shield anti reverse-engineering
-│       └── app.js             # Chat logic + SSE streaming
-└── templates/
-    ├── index.html             # Shell utama (HTMX)
-    └── partials/
-        ├── user_message.html  # Bubble user
-        └── ai_message.html    # Bubble AI
+purai-express/
+├── server.js          ← Backend Express (pengganti main.py)
+├── package.json
+├── views/
+│   └── index.html     ← Template HTML (pengganti Jinja2)
+└── public/
+    ├── css/
+    │   └── main.css   ← Design system (tidak berubah)
+    └── js/
+        ├── app.js     ← Chat logic SSE (tidak berubah)
+        └── anti-re.js ← Anti-RE shield (tidak berubah)
 ```
 
 ## Instalasi & Menjalankan
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-
-# 2. (Opsional) set secret key
-export PURAI_SECRET="ganti-dengan-secret-kuat-anda"
-
-# 3. Jalankan server
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+npm install
+npm start
+# atau untuk development (auto-reload):
+npm run dev
 ```
 
-Buka `http://localhost:8000` di browser.
+Buka browser → http://localhost:3000
 
-## Keamanan
+## Environment Variables
 
-### Anti-Bot
-- **HMAC Token**: Setiap sesi mendapat token `IP:timestamp:signature` yang diverifikasi server
-- **Rate Limiting**: Maksimal 20 request/menit per IP (in-memory; ganti Redis untuk produksi)
-- **User-Agent Blocking**: curl, wget, python-requests, Postman, dll. diblokir
-- **Input Validation**: prompt max 4096 char, model & mode di-whitelist, HTML di-strip
+| Variable       | Default             | Deskripsi                    |
+|----------------|---------------------|------------------------------|
+| `PURAI_SECRET` | random setiap start | HMAC secret untuk token CSRF |
+| `PORT`         | `3000`              | Port server                  |
 
-### Anti-Reverse Engineering
-- **Devtools Detection**: Polling `debugger` timing + window size diff
-- **Console Poisoning**: `console.log` dll. di-override dengan getter yang memicu shield
-- **Right-Click Disabled**: `contextmenu` di-prevent
-- **Keyboard Shortcuts Blocked**: F12, Ctrl+Shift+I/J/C/K, Ctrl+U/S
-- **iframe Guard**: Menolak beroperasi di dalam iframe
-- **Automation Detection**: Deteksi headless Chrome, Puppeteer, Selenium, WebDriver
-- **Token Obfuscation**: Token di-XOR di HTML sebelum dikirim ke JS
-
-### Untuk Produksi
-- Ganti in-memory rate store dengan **Redis**
-- Tambahkan **HTTPS** (Nginx + Certbot)
-- Set `PURAI_SECRET` dari environment variable yang aman
-- Tambahkan **Cloudflare** di depan untuk DDoS protection
-- Pertimbangkan **Turnstile CAPTCHA** untuk verifikasi human tambahan
-
-## Kustomisasi
-
-### Menambah Model
-Di `main.py`, tambahkan ke `ALLOWED_MODELS`:
-```python
-ALLOWED_MODELS = {"gemini-3-flash-preview", "model-baru"}
+```bash
+# Contoh production:
+PURAI_SECRET=mysupersecret PORT=8080 npm start
 ```
-Di `templates/index.html`, tambahkan `<option>` di select model.
 
-### Mengubah Rate Limit
-```python
-RATE_LIMIT_WIN = 60   # window dalam detik
-RATE_LIMIT_MAX = 20   # max request per window
-```
+## Perbandingan Python → Node.js
+
+| FastAPI (Python)         | Express.js (Node.js)           |
+|--------------------------|--------------------------------|
+| `main.py`                | `server.js`                    |
+| `Jinja2Templates`        | `renderTemplate()` (built-in)  |
+| `StaticFiles`            | `express.static()`             |
+| `StreamingResponse`      | `res.write()` + SSE manual     |
+| `hmac.new(...)`          | `crypto.createHmac(...)`       |
+| `hmac.compare_digest()`  | `crypto.timingSafeEqual()`     |
+| `httpx.AsyncClient`      | `node-fetch` (stream)          |
+| `Form(...)`              | `express.urlencoded()`         |
+| `Header(...)`            | `req.headers['x-purai-token']` |
+
+## Catatan
+
+- Token CSRF TTL: 5 menit (300 detik), refresh otomatis tiap 4 menit
+- Rate limit: 20 request / 60 detik per IP
+- Streaming SSE dari upstream diteruskan langsung ke client
+- Anti-bot & anti-RE logic tidak berubah (file JS sama)

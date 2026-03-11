@@ -9,18 +9,19 @@
 <meta name="description" content="PurAI – Your intelligent companion"/>
 <title>PurAI</title>
 
-<!-- Anti-devtools obfuscation hint -->
 <meta name="robots" content="noindex,nofollow"/>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
 
+<!-- HTMX -->
 <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2uH1/vpiQB3gMi8PBBqfBJBj9lzGUb0Ber" crossorigin="anonymous"></script>
+<!-- Markdown + Sanitizer -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
 
-<link rel="stylesheet" href="/static/css/main.css"/>
+<link rel="stylesheet" href="/css/main.css"/>
 </head>
 <body>
 
@@ -153,7 +154,7 @@
   </main>
 </div>
 
-<!-- Hidden token store -->
+<!-- Token injection (obfuscated XOR, sama seperti versi Python) -->
 <script>
 (function(){
   var _k=7,_s="{{ csrf_token }}".split("").map(function(c,i){return String.fromCharCode(c.charCodeAt(0)^(i%_k));}).join("");
@@ -161,7 +162,7 @@
 })();
 </script>
 
-<script src="/static/js/anti-re.js"></script>
-<script src="/static/js/app.js"></script>
+<script src="/js/anti-re.js"></script>
+<script src="/js/app.js"></script>
 </body>
 </html>
