@@ -1,86 +1,167 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>PurAI – Chat</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/style.css" />
-  <!-- marked.js for markdown rendering -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
-  <!-- htmx -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0a0a12"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="description" content="PurAI – Your intelligent companion"/>
+<title>PurAI</title>
+
+<!-- Anti-devtools obfuscation hint -->
+<meta name="robots" content="noindex,nofollow"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2uH1/vpiQB3gMi8PBBqfBJBj9lzGUb0Ber" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+
+<link rel="stylesheet" href="/static/css/main.css"/>
 </head>
 <body>
 
-<div class="app-shell">
+<!-- ░░ ANTI-RE TRAP ░░ -->
+<div id="__purai_trap" style="display:none" aria-hidden="true"></div>
 
-  <!-- Top bar -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <div class="logo-mark">P</div>
-      <div class="brand">
-        <span class="brand-name">PurAI</span>
-        <span class="brand-sub">powered by Puruboy</span>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <div class="status-pill">
-        <span class="status-dot"></span>
-        <span>Online</span>
-      </div>
-      <select id="model-select" class="model-select">
-        <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
-        <option value="gemini-2.0-flash">Gemini 2.0</option>
-        <option value="gpt-4o-mini">GPT-4o Mini</option>
-      </select>
-    </div>
-  </header>
+<!-- ░░ APP SHELL ░░ -->
+<div id="app">
 
-  <!-- Chat area -->
-  <main class="chat-area" id="chat-area">
-    <!-- Welcome state -->
-    <div class="welcome-state" id="welcome-state">
-      <div class="welcome-logo">P</div>
-      <h1 class="welcome-title">Halo, saya PurAI</h1>
-      <p class="welcome-sub">Asisten AI cerdas siap membantu Anda kapan saja</p>
-      <div class="suggestion-chips">
-        <button class="chip" onclick="fillPrompt('Jelaskan konsep machine learning dengan sederhana')">🧠 Machine Learning</button>
-        <button class="chip" onclick="fillPrompt('Buatkan kode Python untuk sorting algoritma')">💻 Kode Python</button>
-        <button class="chip" onclick="fillPrompt('Apa tren teknologi AI terbaru di 2025?')">🚀 Tren AI 2025</button>
-        <button class="chip" onclick="fillPrompt('Bantu saya membuat rencana belajar pemrograman')">📚 Rencana Belajar</button>
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-mark">
+        <span class="logo-icon">✦</span>
+        <span class="logo-text">PurAI</span>
       </div>
+      <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close sidebar">✕</button>
     </div>
 
-    <!-- Messages container -->
-    <div id="messages"></div>
-    <div id="scroll-anchor"></div>
-  </main>
-
-  <!-- Input bar -->
-  <footer class="input-bar">
-    <div class="input-wrap">
-      <textarea
-        id="msg-input"
-        class="msg-input"
-        placeholder="Kirim pesan..."
-        rows="1"
-        onkeydown="handleKey(event)"
-        oninput="autoResize(this)"
-      ></textarea>
-      <button class="send-btn" id="send-btn" onclick="sendMessage()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="newChat()">
+        <span class="nav-icon">＋</span>
+        <span>New Chat</span>
       </button>
-    </div>
-    <p class="disclaimer">PurAI dapat membuat kesalahan. Verifikasi informasi penting.</p>
-  </footer>
+    </nav>
 
+    <div class="history-section">
+      <p class="history-label">Recent</p>
+      <div id="history-list" class="history-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="model-selector">
+        <label for="model-select" class="model-label">Model</label>
+        <select id="model-select" class="model-select" onchange="updateModel(this.value)">
+          <option value="gemini-3-flash-preview">Gemini 3 Flash ⚡</option>
+          <option value="gemini-pro">Gemini Pro 🔮</option>
+          <option value="gpt-4o-mini">GPT-4o Mini 🤖</option>
+        </select>
+      </div>
+      <div class="mode-selector">
+        <label class="mode-label">Mode</label>
+        <div class="mode-chips">
+          <button class="mode-chip active" data-mode="standard" onclick="setMode('standard',this)">Standard</button>
+          <button class="mode-chip" data-mode="creative" onclick="setMode('creative',this)">Creative</button>
+          <button class="mode-chip" data-mode="precise" onclick="setMode('precise',this)">Precise</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- OVERLAY -->
+  <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-title">
+        <span class="top-logo">✦ PurAI</span>
+        <span id="model-badge" class="model-badge">Gemini 3 Flash</span>
+      </div>
+      <button class="topbar-new" onclick="newChat()" title="New Chat">✦</button>
+    </header>
+
+    <!-- MESSAGES AREA -->
+    <div id="messages" class="messages" role="log" aria-live="polite" aria-label="Chat messages">
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-icon">✦</div>
+        <h1 class="welcome-title">PurAI</h1>
+        <p class="welcome-sub">Your intelligent companion.<br/>Ask anything.</p>
+        <div class="suggestion-grid">
+          <button class="suggestion-chip" onclick="fillPrompt('Jelaskan konsep machine learning dengan sederhana')">🧠 Apa itu Machine Learning?</button>
+          <button class="suggestion-chip" onclick="fillPrompt('Buatkan kode Python untuk web scraping')">💻 Kode Python scraping</button>
+          <button class="suggestion-chip" onclick="fillPrompt('Tuliskan email profesional untuk melamar kerja')">✉️ Email lamaran kerja</button>
+          <button class="suggestion-chip" onclick="fillPrompt('Apa tren teknologi AI terbaru 2025?')">🚀 Tren AI 2025</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TYPING INDICATOR -->
+    <div id="typing-indicator" class="typing-indicator hidden">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+
+    <!-- INPUT AREA -->
+    <div class="input-area">
+      <form id="chat-form" class="input-form">
+        <input type="hidden" name="model" id="form-model" value="gemini-3-flash-preview"/>
+        <input type="hidden" name="chat_mode" id="form-mode" value="standard"/>
+
+        <div class="input-wrapper">
+          <textarea
+            id="prompt-input"
+            name="prompt"
+            class="prompt-textarea"
+            placeholder="Tanyakan sesuatu..."
+            rows="1"
+            maxlength="4096"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            onkeydown="handleKey(event)"
+            oninput="autoResize(this)"
+            aria-label="Your message"
+          ></textarea>
+
+          <div class="input-actions">
+            <span id="char-count" class="char-count">0/4096</span>
+            <button type="submit" id="send-btn" class="send-btn" aria-label="Send">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </form>
+      <p class="disclaimer">PurAI dapat membuat kesalahan. Periksa informasi penting.</p>
+    </div>
+
+  </main>
 </div>
 
+<!-- Hidden token store -->
+<script>
+(function(){
+  var _k=7,_s="{{ csrf_token }}".split("").map(function(c,i){return String.fromCharCode(c.charCodeAt(0)^(i%_k));}).join("");
+  window.__p=_s.split("").map(function(c,i){return String.fromCharCode(c.charCodeAt(0)^(i%_k));}).join("");
+})();
+</script>
+
+<script src="/static/js/anti-re.js"></script>
 <script src="/static/js/app.js"></script>
 </body>
 </html>

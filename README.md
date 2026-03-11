@@ -1,77 +1,87 @@
-# PurAI – Chat App
+# PurAI Chat 🌟
 
-Chat interface modern berbasis **HTMX partials + Go** yang terhubung ke API AI PurAI dengan streaming SSE.
-
-## Stack
-
-| Layer | Tech |
-|-------|------|
-| Backend | Go (stdlib, no framework) |
-| Frontend | HTMX, Vanilla JS |
-| Streaming | SSE (Server-Sent Events) |
-| Markdown | marked.js |
-| Font | Sora + JetBrains Mono |
-
-## Struktur Project
-
-```
-purai/
-├── main.go                  # Entry point, router
-├── go.mod
-├── handlers/
-│   └── chat.go              # IndexHandler, ChatSendHandler (SSE proxy)
-├── templates/
-│   └── index.html           # Main HTML template
-└── static/
-    ├── css/style.css        # Dark glass mobile UI
-    └── js/app.js            # Streaming chat logic
-```
-
-## Cara Jalankan
-
-```bash
-# 1. Masuk ke folder
-cd purai
-
-# 2. Jalankan server
-go run main.go
-
-# 3. Buka browser
-open http://localhost:8080
-```
-
-## API yang Digunakan
-
-```
-POST https://www.puruboy.kozow.com/api/ai/notegpt
-Content-Type: application/json
-
-{
-  "prompt": "...",
-  "model": "gemini-3-flash-preview",
-  "chat_mode": "standard"
-}
-```
-
-Response berupa SSE stream dengan event:
-- `data: {"text":"..."}` – token teks
-- `data: {"text":"","done":true}` – selesai
-- `data: {"type":"finish"}` – end
+Website chat AI modern berbasis **FastAPI + HTMX**, terkoneksi ke API PurAI streaming.
 
 ## Fitur
 
-- 💬 Streaming real-time token per token
-- 🌙 Dark glass UI, mobile-first (max 480px)
-- 📝 Render Markdown (tabel, kode, list, heading)
-- 🎨 Suggestion chips di welcome screen
-- 📌 Auto-resize textarea
-- ⬇️ Scroll-to-bottom button
-- 🔄 Model selector (Gemini, GPT)
-- ⚡ Tidak perlu framework eksternal
+- ✅ **Streaming SSE** – respons AI tampil real-time karakter demi karakter
+- ✅ **Markdown rendering** – tabel, kode, heading, bold, italic otomatis di-render
+- ✅ **Mobile-first UI** – desain seperti aplikasi chat native
+- ✅ **Multi-model** – Gemini 3 Flash, Gemini Pro, GPT-4o Mini
+- ✅ **Multi-mode** – Standard, Creative, Precise
+- ✅ **Riwayat chat** – disimpan di localStorage
+- ✅ **Anti-bot** – token HMAC per-session + rate limiting
+- ✅ **Anti-RE** – devtools detection, console poisoning, right-click blocking
 
-## Build Binary
+## Struktur
+
+```
+purai/
+├── main.py                    # FastAPI app utama
+├── requirements.txt
+├── static/
+│   ├── css/
+│   │   └── main.css           # Desain dark luxury
+│   └── js/
+│       ├── anti-re.js         # Shield anti reverse-engineering
+│       └── app.js             # Chat logic + SSE streaming
+└── templates/
+    ├── index.html             # Shell utama (HTMX)
+    └── partials/
+        ├── user_message.html  # Bubble user
+        └── ai_message.html    # Bubble AI
+```
+
+## Instalasi & Menjalankan
 
 ```bash
-go build -o purai-server .
-./purai-server
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. (Opsional) set secret key
+export PURAI_SECRET="ganti-dengan-secret-kuat-anda"
+
+# 3. Jalankan server
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Buka `http://localhost:8000` di browser.
+
+## Keamanan
+
+### Anti-Bot
+- **HMAC Token**: Setiap sesi mendapat token `IP:timestamp:signature` yang diverifikasi server
+- **Rate Limiting**: Maksimal 20 request/menit per IP (in-memory; ganti Redis untuk produksi)
+- **User-Agent Blocking**: curl, wget, python-requests, Postman, dll. diblokir
+- **Input Validation**: prompt max 4096 char, model & mode di-whitelist, HTML di-strip
+
+### Anti-Reverse Engineering
+- **Devtools Detection**: Polling `debugger` timing + window size diff
+- **Console Poisoning**: `console.log` dll. di-override dengan getter yang memicu shield
+- **Right-Click Disabled**: `contextmenu` di-prevent
+- **Keyboard Shortcuts Blocked**: F12, Ctrl+Shift+I/J/C/K, Ctrl+U/S
+- **iframe Guard**: Menolak beroperasi di dalam iframe
+- **Automation Detection**: Deteksi headless Chrome, Puppeteer, Selenium, WebDriver
+- **Token Obfuscation**: Token di-XOR di HTML sebelum dikirim ke JS
+
+### Untuk Produksi
+- Ganti in-memory rate store dengan **Redis**
+- Tambahkan **HTTPS** (Nginx + Certbot)
+- Set `PURAI_SECRET` dari environment variable yang aman
+- Tambahkan **Cloudflare** di depan untuk DDoS protection
+- Pertimbangkan **Turnstile CAPTCHA** untuk verifikasi human tambahan
+
+## Kustomisasi
+
+### Menambah Model
+Di `main.py`, tambahkan ke `ALLOWED_MODELS`:
+```python
+ALLOWED_MODELS = {"gemini-3-flash-preview", "model-baru"}
+```
+Di `templates/index.html`, tambahkan `<option>` di select model.
+
+### Mengubah Rate Limit
+```python
+RATE_LIMIT_WIN = 60   # window dalam detik
+RATE_LIMIT_MAX = 20   # max request per window
 ```

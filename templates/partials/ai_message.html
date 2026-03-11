@@ -1,0 +1,19 @@
+<!-- AI message bubble partial - streamed into via JS -->
+<div class="message ai-message" data-id="{{ msg_id }}">
+  <div class="ai-avatar">✦</div>
+  <div class="message-content">
+    <div class="message-text ai-text" id="ai-{{ msg_id }}">
+      <!-- streaming content injected by JS -->
+    </div>
+    <div class="message-actions hidden" id="actions-{{ msg_id }}">
+      <button class="action-btn" onclick="copyMsg('ai-{{ msg_id }}')" title="Copy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy
+      </button>
+      <button class="action-btn" onclick="regenMsg()" title="Regenerate">↻ Regen</button>
+    </div>
+  </div>
+  <div class="message-meta">
+    <span class="msg-time">{{ time }}</span>
+  </div>
+</div>
