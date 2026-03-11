@@ -244,6 +244,32 @@ app.post('/chat/send', async (req, res) => {
   }
 });
 
+// ─── INFO PAGES (partials for HTMX + full page fallback) ───────────────────────
+const INFO_PAGES = { faq: 'faq.html', tos: 'tos.html', privacy: 'privacy.html' };
+
+app.get('/page/:slug', (req, res) => {
+  const file = INFO_PAGES[req.params.slug];
+  if (!file) return res.status(404).send('Not found');
+  const partial = readFileSync(path.join(__dirname, 'views', 'pages', file), 'utf-8');
+  res.send(partial);
+});
+
+// Full-page route for direct access (browser back/forward)
+['faq', 'tos', 'privacy'].forEach(slug => {
+  app.get(`/${slug}`, (req, res) => {
+    const sid = _getOrCreateSessionId(req, res);
+    const token = _makeToken(sid);
+    const k = 7;
+    const obf = token.split('').map((c, i) =>
+      String.fromCharCode(c.charCodeAt(0) ^ (i % k))
+    ).join('');
+    const html = renderTemplate(path.join(__dirname, 'views', 'index.html'), {
+      csrf_token: obf,
+    });
+    res.send(html);
+  });
+});
+
 // ─── START ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`✦ PurAI Express running → http://localhost:${PORT}`);

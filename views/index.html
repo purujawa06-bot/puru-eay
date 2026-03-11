@@ -64,14 +64,6 @@
           <option value="puruboy-pro">PuruBoy Pro 🧠</option>
         </select>
       </div>
-      <div class="mode-selector">
-        <label class="mode-label">Mode</label>
-        <div class="mode-chips">
-          <button class="mode-chip active" data-mode="standard" onclick="setMode('standard',this)">Standard</button>
-          <button class="mode-chip" data-mode="deep_think" onclick="setMode('deep_think',this)">Deep Think</button>
-          <button class="mode-chip" data-mode="guided_learning" onclick="setMode('guided_learning',this)">Guided</button>
-        </div>
-      </div>
       <div class="system-prompt-section">
         <label class="mode-label" for="system-prompt-input">
           System Prompt
@@ -91,6 +83,28 @@
         </div>
       </div>
     </div>
+    <nav class="sidebar-links">
+      <a class="sidebar-link"
+         hx-get="/page/faq"
+         hx-target="#page-modal-body"
+         hx-push-url="/faq"
+         hx-on::after-request="openPageModal()"
+         href="/faq">FAQ</a>
+      <span class="sidebar-link-sep">·</span>
+      <a class="sidebar-link"
+         hx-get="/page/tos"
+         hx-target="#page-modal-body"
+         hx-push-url="/tos"
+         hx-on::after-request="openPageModal()"
+         href="/tos">Terms</a>
+      <span class="sidebar-link-sep">·</span>
+      <a class="sidebar-link"
+         hx-get="/page/privacy"
+         hx-target="#page-modal-body"
+         hx-push-url="/privacy"
+         hx-on::after-request="openPageModal()"
+         href="/privacy">Privacy</a>
+    </nav>
   </aside>
 
   <!-- OVERLAY -->
@@ -170,7 +184,16 @@
       <p class="disclaimer">PurAI dapat membuat kesalahan. Periksa informasi penting.</p>
     </div>
 
-  </main>
+  </main><!-- ░░ PAGE MODAL (FAQ / TOS / Privacy) ░░ -->
+<div id="page-modal" class="page-modal" aria-modal="true" role="dialog" aria-label="Info page">
+  <div class="page-modal-inner">
+    <button class="page-modal-close" onclick="closePageModal()" aria-label="Close">✕</button>
+    <div id="page-modal-body" class="page-modal-body">
+      <!-- HTMX injects content here -->
+    </div>
+  </div>
+</div>
+
 </div>
 
 <!-- Token injection (obfuscated XOR, sama seperti versi Python) -->
@@ -183,5 +206,31 @@
 
 <script src="/js/anti-re.js"></script>
 <script src="/js/app.js"></script>
+<script>
+function openPageModal() {
+  document.getElementById('page-modal').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePageModal() {
+  document.getElementById('page-modal').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  history.pushState(null, '', '/');
+}
+// Close modal on overlay click
+document.getElementById('overlay').addEventListener('click', function() {
+  if (document.getElementById('page-modal').classList.contains('open')) {
+    closePageModal();
+  } else {
+    toggleSidebar();
+  }
+});
+// Handle browser back/forward
+window.addEventListener('popstate', function() {
+  const path = location.pathname;
+  if (path === '/' || path === '') {
+    closePageModal();
+  }
+});
+</script>
 </body>
 </html>
