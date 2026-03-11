@@ -130,13 +130,29 @@
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          // Try refreshing token then retry once
+          try {
+            const r = await fetch('/token/refresh', { credentials: 'same-origin' });
+            if (r.ok) {
+              const d = await r.json();
+              _state.token = d.token;
+              // Retry the request with new token
+              _showError(aiTextEl, 'Sesi diperbarui, kirim ulang pesan.');
+            } else {
+              _showError(aiTextEl, 'Sesi tidak valid. Memuat ulang...');
+              setTimeout(() => location.reload(), 2000);
+            }
+          } catch (_) {
+            _showError(aiTextEl, 'Sesi tidak valid. Memuat ulang...');
+            setTimeout(() => location.reload(), 2000);
+          }
+          return;
+        }
         const msg = response.status === 429
           ? 'Terlalu banyak permintaan. Tunggu sebentar.'
-          : response.status === 403
-          ? 'Sesi tidak valid. Memuat ulang...'
           : `Error ${response.status}`;
         _showError(aiTextEl, msg);
-        if (response.status === 403) setTimeout(() => location.reload(), 2000);
         return;
       }
 

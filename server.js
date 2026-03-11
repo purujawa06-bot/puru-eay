@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import cookieParser from 'cookie-parser';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -30,6 +31,7 @@ const _rateStore = new Map(); // ip -> [timestamps]
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser(SECRET_KEY));
 
 // Harden headers
 app.use((req, res, next) => {
@@ -47,22 +49,41 @@ function _sign(payload) {
   return crypto.createHmac('sha256', SECRET_KEY).update(payload).digest('hex');
 }
 
-function _makeToken(ip) {
+function _getOrCreateSessionId(req, res) {
+  let sid = req.signedCookies?.purai_sid;
+  if (!sid) {
+    sid = crypto.randomBytes(24).toString('hex');
+    res.cookie('purai_sid', sid, {
+      httpOnly: true,
+      sameSite: 'lax',
+      signed: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+  return sid;
+}
+
+function _makeToken(sid) {
   const ts = Math.floor(Date.now() / 1000).toString();
-  const raw = `${ip}:${ts}`;
+  const raw = `${sid}:${ts}`;
   const sig = _sign(raw);
   return `${raw}:${sig}`;
 }
 
-function _verifyToken(token, ip) {
+function _verifyToken(token, sid) {
   try {
-    const parts = token.split(':');
-    if (parts.length !== 3) return false;
-    const [tokIp, ts, sig] = parts;
-    if (tokIp !== ip) return false;
+    // token format: sid:ts:sig
+    const lastColon = token.lastIndexOf(':');
+    const secondLastColon = token.lastIndexOf(':', lastColon - 1);
+    if (lastColon === -1 || secondLastColon === -1) return false;
+    const tokSid = token.slice(0, secondLastColon);
+    const ts     = token.slice(secondLastColon + 1, lastColon);
+    const sig    = token.slice(lastColon + 1);
+    if (tokSid !== sid) return false;
     if (Math.abs(Date.now() / 1000 - parseInt(ts)) > TOKEN_TTL) return false;
-    const expected = _sign(`${tokIp}:${ts}`);
-    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+    const expected = _sign(`${tokSid}:${ts}`);
+    if (sig.length !== expected.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
   } catch {
     return false;
   }
@@ -102,8 +123,8 @@ function renderTemplate(templatePath, vars = {}) {
 
 // GET / – halaman utama
 app.get('/', (req, res) => {
-  const ip = _getIp(req);
-  const token = _makeToken(ip);
+  const sid = _getOrCreateSessionId(req, res);
+  const token = _makeToken(sid);
   // XOR obfuscation seperti versi Python
   const k = 7;
   const obf = token.split('').map((c, i) =>
@@ -120,8 +141,8 @@ app.get('/', (req, res) => {
 app.get('/token/refresh', (req, res) => {
   const ua = req.headers['user-agent'] || '';
   if (_uaBlock(ua)) return res.status(403).json({ error: 'Forbidden' });
-  const ip = _getIp(req);
-  const token = _makeToken(ip);
+  const sid = _getOrCreateSessionId(req, res);
+  const token = _makeToken(sid);
   res.json({ token });
 });
 
@@ -134,8 +155,9 @@ app.post('/chat/send', async (req, res) => {
   if (_uaBlock(ua)) return res.status(403).send('Forbidden');
 
   // Token verification
+  const sid = req.signedCookies?.purai_sid;
   const puraiToken = req.headers['x-purai-token'];
-  if (!puraiToken || !_verifyToken(puraiToken, ip)) {
+  if (!sid || !puraiToken || !_verifyToken(puraiToken, sid)) {
     return res.status(403).send('Invalid or expired session token.');
   }
 
