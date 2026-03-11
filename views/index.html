@@ -61,16 +61,16 @@
         <label for="model-select" class="model-label">Model</label>
         <select id="model-select" class="model-select" onchange="updateModel(this.value)">
           <option value="gemini-3-flash-preview">Gemini 3 Flash ⚡</option>
-          <option value="gemini-pro">Gemini Pro 🔮</option>
-          <option value="gpt-4o-mini">GPT-4o Mini 🤖</option>
+          <option value="TA/deepseek-ai/DeepSeek-R1">DeepSeek R1 🧠</option>
+          <option value="gpt-5-mini">GPT-5 Mini 🤖</option>
         </select>
       </div>
       <div class="mode-selector">
         <label class="mode-label">Mode</label>
         <div class="mode-chips">
           <button class="mode-chip active" data-mode="standard" onclick="setMode('standard',this)">Standard</button>
-          <button class="mode-chip" data-mode="creative" onclick="setMode('creative',this)">Creative</button>
-          <button class="mode-chip" data-mode="precise" onclick="setMode('precise',this)">Precise</button>
+          <button class="mode-chip" data-mode="deep_think" onclick="setMode('deep_think',this)">Deep Think</button>
+          <button class="mode-chip" data-mode="guided_learning" onclick="setMode('guided_learning',this)">Guided</button>
         </div>
       </div>
     </div>

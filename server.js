@@ -20,8 +20,8 @@ const TOKEN_TTL       = 300;        // seconds
 const MAX_PROMPT_LEN  = 4096;
 const RATE_LIMIT_WIN  = 60;         // seconds
 const RATE_LIMIT_MAX  = 20;
-const ALLOWED_MODELS  = new Set(['gemini-3-flash-preview', 'gemini-pro', 'gpt-4o-mini']);
-const ALLOWED_MODES   = new Set(['standard', 'creative', 'precise']);
+const ALLOWED_MODELS  = new Set(['gemini-3-flash-preview', 'TA/deepseek-ai/DeepSeek-R1', 'gpt-5-mini']);
+const ALLOWED_MODES   = new Set(['standard', 'deep_think', 'guided_learning']);
 const PORT            = process.env.PORT || 3000;
 
 // ─── IN-MEMORY STORES ──────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ app.post('/chat/send', async (req, res) => {
   }
 
   // Input validation
-  let { prompt, model = 'gemini-3-flash-preview', chat_mode = 'standard' } = req.body;
+  let { prompt, model = 'gemini-3-flash-preview', chat_mode = 'standard', history = '[]' } = req.body;
   prompt = (prompt || '').trim();
   if (!prompt || prompt.length > MAX_PROMPT_LEN)
     return res.status(400).send('Invalid prompt length.');
@@ -175,6 +175,14 @@ app.post('/chat/send', async (req, res) => {
     return res.status(400).send('Model not allowed.');
   if (!ALLOWED_MODES.has(chat_mode))
     return res.status(400).send('Invalid chat mode.');
+
+  // Parse history (last 10 pairs)
+  let parsedHistory = [];
+  try {
+    parsedHistory = JSON.parse(history);
+    if (!Array.isArray(parsedHistory)) parsedHistory = [];
+    parsedHistory = parsedHistory.slice(-10); // max 10 entries
+  } catch { parsedHistory = []; }
 
   // Sanitize: strip HTML tags
   prompt = prompt.replace(/<[^>]*>/g, '');
@@ -194,7 +202,7 @@ app.post('/chat/send', async (req, res) => {
     const upstream = await fetch(UPSTREAM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, model, chat_mode }),
+      body: JSON.stringify({ prompt, model, chat_mode, history: parsedHistory }),
       signal: AbortSignal.timeout(60000),
     });
 
@@ -220,6 +228,10 @@ app.post('/chat/send', async (req, res) => {
         }
 
         const text = obj.text || '';
+        const reasoning = obj.reasoning || '';
+        if (reasoning) {
+          sendChunk({ reasoning });
+        }
         if (text) {
           // Escape HTML seperti versi Python
           const escaped = text
