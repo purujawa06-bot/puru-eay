@@ -106,49 +106,55 @@
   }
 
   // ── Stream ──────────────────────────────────────────────────────────────────
+  async function _doFetch(prompt, token) {
+    const body = new URLSearchParams();
+    body.append('prompt', prompt);
+    body.append('model', _state.model);
+    body.append('chat_mode', _state.mode);
+
+    return fetch('/chat/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Purai-Token': token || '',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: body.toString(),
+      credentials: 'same-origin',
+    });
+  }
+
   async function _streamResponse(prompt, msgId, aiBubble) {
     _state.streaming = true;
     const aiTextEl = document.getElementById(`ai-${msgId}`);
     if (aiTextEl) aiTextEl.classList.add('streaming');
 
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('model', _state.model);
-    formData.append('chat_mode', _state.mode);
-
     let rawText = '';
 
     try {
-      const response = await fetch('/chat/send', {
-        method: 'POST',
-        headers: {
-          'X-Purai-Token': _state.token || '',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: formData,
-        credentials: 'same-origin',
-      });
+      let response = await _doFetch(prompt, _state.token);
 
-      if (!response.ok) {
-        if (response.status === 403) {
-          // Try refreshing token then retry once
-          try {
-            const r = await fetch('/token/refresh', { credentials: 'same-origin' });
-            if (r.ok) {
-              const d = await r.json();
-              _state.token = d.token;
-              // Retry the request with new token
-              _showError(aiTextEl, 'Sesi diperbarui, kirim ulang pesan.');
-            } else {
-              _showError(aiTextEl, 'Sesi tidak valid. Memuat ulang...');
-              setTimeout(() => location.reload(), 2000);
-            }
-          } catch (_) {
+      // Jika 403, refresh token lalu retry sekali
+      if (response.status === 403) {
+        try {
+          const r = await fetch('/token/refresh', { credentials: 'same-origin' });
+          if (r.ok) {
+            const d = await r.json();
+            _state.token = d.token;
+            response = await _doFetch(prompt, _state.token);
+          } else {
             _showError(aiTextEl, 'Sesi tidak valid. Memuat ulang...');
             setTimeout(() => location.reload(), 2000);
+            return;
           }
+        } catch (_) {
+          _showError(aiTextEl, 'Sesi tidak valid. Memuat ulang...');
+          setTimeout(() => location.reload(), 2000);
           return;
         }
+      }
+
+      if (!response.ok) {
         const msg = response.status === 429
           ? 'Terlalu banyak permintaan. Tunggu sebentar.'
           : `Error ${response.status}`;

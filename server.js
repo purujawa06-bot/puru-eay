@@ -15,7 +15,7 @@ const app = express();
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const UPSTREAM_URL    = 'https://www.puruboy.kozow.com/api/ai/notegpt';
-const SECRET_KEY      = process.env.PURAI_SECRET || crypto.randomBytes(32).toString('hex');
+const SECRET_KEY      = process.env.PURAI_SECRET || 'ih_kok_tau_si';
 const TOKEN_TTL       = 300;        // seconds
 const MAX_PROMPT_LEN  = 4096;
 const RATE_LIMIT_WIN  = 60;         // seconds
