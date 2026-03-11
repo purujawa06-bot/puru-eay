@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PurAI — Chat</title>
+  <link rel="stylesheet" href="static/css/app.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script src="static/js/stream.js" defer></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     APP SHELL
+════════════════════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">✦</span>
+        <span class="logo-text">PurAI</span>
+      </div>
+      <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Tutup sidebar">✕</button>
+    </div>
+
+    <button class="new-chat-btn"
+      hx-post="partials/new-chat.html"
+      hx-target="#chat-messages"
+      hx-swap="innerHTML"
+      onclick="resetChat(); toggleSidebar()">
+      <span class="btn-icon">＋</span>
+      <span>Chat Baru</span>
+    </button>
+
+    <div class="sidebar-section">
+      <p class="sidebar-label">Model</p>
+      <div class="model-picker" id="model-picker">
+        <label class="model-option active" data-model="gemini-3-flash-preview">
+          <input type="radio" name="model" value="gemini-3-flash-preview" checked hidden/>
+          <span class="model-dot"></span>
+          <span class="model-name">Gemini Flash</span>
+          <span class="model-badge">Fast</span>
+        </label>
+        <label class="model-option" data-model="gemini-2.5-pro-preview">
+          <input type="radio" name="model" value="gemini-2.5-pro-preview" hidden/>
+          <span class="model-dot"></span>
+          <span class="model-name">Gemini Pro</span>
+          <span class="model-badge pro">Pro</span>
+        </label>
+        <label class="model-option" data-model="gpt-4o">
+          <input type="radio" name="model" value="gpt-4o" hidden/>
+          <span class="model-dot"></span>
+          <span class="model-name">GPT-4o</span>
+          <span class="model-badge">OpenAI</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="sidebar-label">Riwayat</p>
+      <div class="history-list" id="history-list">
+        <!-- Populated by JS -->
+        <p class="history-empty">Belum ada riwayat chat.</p>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">P</div>
+        <div class="user-meta">
+          <span class="user-name">Pengguna</span>
+          <span class="user-plan">Free Plan</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- OVERLAY -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- MAIN CHAT AREA -->
+  <main class="chat-main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-title">
+        <span class="logo-icon">✦</span>
+        <span id="topbar-model-name">PurAI</span>
+      </div>
+      <button class="topbar-action" onclick="resetChat()" title="Chat baru">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </header>
+
+    <!-- MESSAGES -->
+    <div class="chat-messages" id="chat-messages">
+      <!-- Welcome screen partial -->
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-glow"></div>
+        <div class="welcome-icon">✦</div>
+        <h1 class="welcome-title">PurAI</h1>
+        <p class="welcome-subtitle">Asisten cerdas Anda. Tanyakan apa saja.</p>
+        <div class="suggestion-chips" id="suggestion-chips">
+          <button class="chip" onclick="sendSuggestion(this)">💡 Jelaskan quantum computing</button>
+          <button class="chip" onclick="sendSuggestion(this)">✍️ Buatkan email profesional</button>
+          <button class="chip" onclick="sendSuggestion(this)">🔢 Bantuan matematika</button>
+          <button class="chip" onclick="sendSuggestion(this)">💻 Review kode Python</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TYPING INDICATOR (hidden by default) -->
+    <div class="typing-indicator" id="typing-indicator" style="display:none">
+      <div class="typing-avatar">✦</div>
+      <div class="typing-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- INPUT AREA -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea
+          id="chat-input"
+          class="chat-textarea"
+          placeholder="Tanyakan sesuatu…"
+          rows="1"
+          autocomplete="off"
+          spellcheck="false"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" aria-label="Kirim">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <p class="input-hint">PurAI bisa membuat kesalahan. Verifikasi informasi penting.</p>
+    </div>
+
+  </main>
+</div>
+
+<script src="static/js/app.js"></script>
+</body>
+</html>

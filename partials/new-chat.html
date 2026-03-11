@@ -1,0 +1,24 @@
+<!-- partials/new-chat.html -->
+<!-- Injected into #chat-messages via HTMX when New Chat is clicked -->
+<div class="welcome-screen" id="welcome-screen">
+  <div class="welcome-glow"></div>
+  <div class="welcome-icon">✦</div>
+  <h1 class="welcome-title">PurAI</h1>
+  <p class="welcome-subtitle">Asisten cerdas Anda. Tanyakan apa saja.</p>
+  <div class="suggestion-chips" id="suggestion-chips">
+    <button class="chip" onclick="sendSuggestion(this)">💡 Jelaskan quantum computing</button>
+    <button class="chip" onclick="sendSuggestion(this)">✍️ Buatkan email profesional</button>
+    <button class="chip" onclick="sendSuggestion(this)">🔢 Bantuan matematika</button>
+    <button class="chip" onclick="sendSuggestion(this)">💻 Review kode Python</button>
+    <button class="chip" onclick="sendSuggestion(this)">🌐 Terjemahkan teks ini</button>
+    <button class="chip" onclick="sendSuggestion(this)">📝 Buat ringkasan artikel</button>
+  </div>
+</div>
+
+<script>
+  // Re-init when partial is swapped in
+  if (window.resetChat) {
+    window.chatHistory = [];
+    window.messageCount = 0;
+  }
+</script>
