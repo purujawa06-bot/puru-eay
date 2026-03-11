@@ -167,7 +167,7 @@ app.post('/chat/send', async (req, res) => {
   }
 
   // Input validation
-  let { prompt, model = 'gemini-3-flash-preview', chat_mode = 'standard', history = '[]' } = req.body;
+  let { prompt, model = 'gemini-3-flash-preview', chat_mode = 'standard', history = '[]', system_prompt = '' } = req.body;
   prompt = (prompt || '').trim();
   if (!prompt || prompt.length > MAX_PROMPT_LEN)
     return res.status(400).send('Invalid prompt length.');
@@ -175,6 +175,9 @@ app.post('/chat/send', async (req, res) => {
     return res.status(400).send('Model not allowed.');
   if (!ALLOWED_MODES.has(chat_mode))
     return res.status(400).send('Invalid chat mode.');
+
+  // Sanitize system prompt
+  system_prompt = (system_prompt || '').trim().slice(0, 2048).replace(/<[^>]*>/g, '');
 
   // Parse history (last 10 pairs)
   let parsedHistory = [];
@@ -202,7 +205,7 @@ app.post('/chat/send', async (req, res) => {
     const upstream = await fetch(UPSTREAM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, model, chat_mode, history: parsedHistory }),
+      body: JSON.stringify({ prompt, model, chat_mode, history: parsedHistory, system_prompt: system_prompt || undefined }),
       signal: AbortSignal.timeout(60000),
     });
 

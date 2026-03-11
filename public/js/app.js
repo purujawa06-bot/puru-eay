@@ -14,6 +14,7 @@
     token: null,
     model: 'gemini-3-flash-preview',
     mode: 'standard',
+    systemPrompt: '',
     streaming: false,
     msgCounter: 0,
     lastPrompt: '',
@@ -257,6 +258,7 @@
     body.append('model', _state.model);
     body.append('chat_mode', _state.mode);
     body.append('history', JSON.stringify(_state.sessionCtx.slice(-MAX_SESSION_CTX)));
+    if (_state.systemPrompt) body.append('system_prompt', _state.systemPrompt);
     return fetch('/chat/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Purai-Token': token || '', 'X-Requested-With': 'XMLHttpRequest' },
@@ -432,6 +434,29 @@
       input.value = text; input.focus(); autoResize(input);
       document.getElementById('char-count').textContent = `${text.length}/4096`;
     }
+  };
+
+  window.updateSystemPrompt = function (val) {
+    _state.systemPrompt = (val || '').trim();
+    const hidden = document.getElementById('form-system-prompt');
+    if (hidden) hidden.value = _state.systemPrompt;
+    const badge = document.getElementById('sys-prompt-badge');
+    if (badge) badge.classList.toggle('hidden', !_state.systemPrompt);
+    const counter = document.getElementById('sys-char-count');
+    if (counter) counter.textContent = `${val.length}/2048`;
+  };
+
+  window.clearSystemPrompt = function () {
+    _state.systemPrompt = '';
+    const ta = document.getElementById('system-prompt-input');
+    if (ta) ta.value = '';
+    const hidden = document.getElementById('form-system-prompt');
+    if (hidden) hidden.value = '';
+    const badge = document.getElementById('sys-prompt-badge');
+    if (badge) badge.classList.add('hidden');
+    const counter = document.getElementById('sys-char-count');
+    if (counter) counter.textContent = '0/2048';
+    _toast('System prompt dihapus.');
   };
 
   window.updateModel = function (val) {

@@ -73,6 +73,24 @@
           <button class="mode-chip" data-mode="guided_learning" onclick="setMode('guided_learning',this)">Guided</button>
         </div>
       </div>
+      <div class="system-prompt-section">
+        <label class="mode-label" for="system-prompt-input">
+          System Prompt
+          <span id="sys-prompt-badge" class="sys-badge hidden">✦ Aktif</span>
+        </label>
+        <textarea
+          id="system-prompt-input"
+          class="system-prompt-textarea"
+          placeholder="Contoh: Kamu adalah asisten coding expert. Selalu jawab dalam Bahasa Indonesia."
+          maxlength="2048"
+          rows="3"
+          oninput="updateSystemPrompt(this.value)"
+        ></textarea>
+        <div class="sys-prompt-footer">
+          <span id="sys-char-count" class="char-count">0/2048</span>
+          <button class="sys-clear-btn" onclick="clearSystemPrompt()" title="Hapus system prompt">Hapus</button>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -121,6 +139,7 @@
       <form id="chat-form" class="input-form">
         <input type="hidden" name="model" id="form-model" value="gemini-3-flash-preview"/>
         <input type="hidden" name="chat_mode" id="form-mode" value="standard"/>
+        <input type="hidden" name="system_prompt" id="form-system-prompt" value=""/>
 
         <div class="input-wrapper">
           <textarea
