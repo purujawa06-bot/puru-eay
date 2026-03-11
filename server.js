@@ -14,13 +14,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const UPSTREAM_URL    = 'https://www.puruboy.kozow.com/api/ai/notegpt';
+const UPSTREAM_URL    = 'https://www.puruboy.kozow.com/api/ai/puruai';
 const SECRET_KEY      = process.env.PURAI_SECRET || 'ih_kok_tau_si';
 const TOKEN_TTL       = 300;        // seconds
 const MAX_PROMPT_LEN  = 4096;
 const RATE_LIMIT_WIN  = 60;         // seconds
 const RATE_LIMIT_MAX  = 20;
-const ALLOWED_MODELS  = new Set(['gemini-3-flash-preview', 'TA/deepseek-ai/DeepSeek-R1', 'gpt-5-mini']);
+const ALLOWED_MODELS  = new Set(['puruboy-flash', 'puruboy-pro']);
 const ALLOWED_MODES   = new Set(['standard', 'deep_think', 'guided_learning']);
 const PORT            = process.env.PORT || 3000;
 
@@ -167,7 +167,7 @@ app.post('/chat/send', async (req, res) => {
   }
 
   // Input validation
-  let { prompt, model = 'gemini-3-flash-preview', chat_mode = 'standard', history = '[]', system_prompt = '' } = req.body;
+  let { prompt, model = 'puruboy-flash', chat_mode = 'standard', system_prompt = '' } = req.body;
   prompt = (prompt || '').trim();
   if (!prompt || prompt.length > MAX_PROMPT_LEN)
     return res.status(400).send('Invalid prompt length.');
@@ -179,16 +179,11 @@ app.post('/chat/send', async (req, res) => {
   // Sanitize system prompt
   system_prompt = (system_prompt || '').trim().slice(0, 2048).replace(/<[^>]*>/g, '');
 
-  // Parse history (last 10 pairs)
-  let parsedHistory = [];
-  try {
-    parsedHistory = JSON.parse(history);
-    if (!Array.isArray(parsedHistory)) parsedHistory = [];
-    parsedHistory = parsedHistory.slice(-10); // max 10 entries
-  } catch { parsedHistory = []; }
-
-  // Sanitize: strip HTML tags
+  // Sanitize: strip HTML tags from prompt
   prompt = prompt.replace(/<[^>]*>/g, '');
+
+  // Use session id as userid for conversation memory
+  const userid = sid;
 
   // Setup SSE
   res.setHeader('Content-Type', 'text/event-stream');
@@ -202,48 +197,43 @@ app.post('/chat/send', async (req, res) => {
     // Dynamically import node-fetch (ESM)
     const { default: fetch } = await import('node-fetch');
 
+    const body = { userid, prompt, model };
+    if (system_prompt) body.system = system_prompt;
+
     const upstream = await fetch(UPSTREAM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, model, chat_mode, history: parsedHistory, system_prompt: system_prompt || undefined }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(60000),
     });
 
-    // Stream upstream SSE → client SSE
-    let buffer = '';
-    for await (const chunk of upstream.body) {
-      buffer += chunk.toString();
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+    const data = await upstream.json();
 
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        const raw = line.slice(5).trim();
-        if (!raw) continue;
+    if (!data.success) {
+      sendChunk({ error: data.error || 'Upstream error' });
+      res.end();
+      return;
+    }
 
-        let obj;
-        try { obj = JSON.parse(raw); } catch { continue; }
-
-        if (obj.type === 'finish' || obj.done) {
-          sendChunk({ done: true });
-          res.end();
-          return;
-        }
-
-        const text = obj.text || '';
-        const reasoning = obj.reasoning || '';
-        if (reasoning) {
-          sendChunk({ reasoning });
-        }
-        if (text) {
-          // Escape HTML seperti versi Python
-          const escaped = text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-          sendChunk({ html: escaped });
+    // Extract text from result array (Gemini-style parts)
+    let text = '';
+    if (Array.isArray(data.result)) {
+      for (const item of data.result) {
+        if (item.role === 'model' && Array.isArray(item.parts)) {
+          for (const part of item.parts) {
+            if (part.text) text += part.text;
+          }
         }
       }
+    }
+
+    if (text) {
+      // Escape HTML before sending
+      const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      sendChunk({ html: escaped });
     }
 
     sendChunk({ done: true });

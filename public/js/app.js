@@ -12,7 +12,7 @@
 
   const _state = {
     token: null,
-    model: 'gemini-3-flash-preview',
+    model: 'puruboy-flash',
     mode: 'standard',
     systemPrompt: '',
     streaming: false,
@@ -257,7 +257,6 @@
     body.append('prompt', prompt);
     body.append('model', _state.model);
     body.append('chat_mode', _state.mode);
-    body.append('history', JSON.stringify(_state.sessionCtx.slice(-MAX_SESSION_CTX)));
     if (_state.systemPrompt) body.append('system_prompt', _state.systemPrompt);
     return fetch('/chat/send', {
       method: 'POST',
@@ -462,7 +461,7 @@
   window.updateModel = function (val) {
     _state.model = val;
     document.getElementById('form-model').value = val;
-    const labels = { 'gemini-3-flash-preview': 'Gemini 3 Flash', 'TA/deepseek-ai/DeepSeek-R1': 'DeepSeek R1', 'gpt-5-mini': 'GPT-5 Mini' };
+    const labels = { 'puruboy-flash': 'PuruBoy Flash', 'puruboy-pro': 'PuruBoy Pro' };
     const badge = document.getElementById('model-badge');
     if (badge) badge.textContent = labels[val] || val;
   };

@@ -60,9 +60,8 @@
       <div class="model-selector">
         <label for="model-select" class="model-label">Model</label>
         <select id="model-select" class="model-select" onchange="updateModel(this.value)">
-          <option value="gemini-3-flash-preview">Gemini 3 Flash ⚡</option>
-          <option value="TA/deepseek-ai/DeepSeek-R1">DeepSeek R1 🧠</option>
-          <option value="gpt-5-mini">GPT-5 Mini 🤖</option>
+          <option value="puruboy-flash">PuruBoy Flash ⚡</option>
+          <option value="puruboy-pro">PuruBoy Pro 🧠</option>
         </select>
       </div>
       <div class="mode-selector">
@@ -107,7 +106,7 @@
       </button>
       <div class="topbar-title">
         <span class="top-logo">✦ PurAI</span>
-        <span id="model-badge" class="model-badge">Gemini 3 Flash</span>
+        <span id="model-badge" class="model-badge">PuruBoy Flash</span>
       </div>
       <button class="topbar-new" onclick="newChat()" title="New Chat">✦</button>
     </header>
@@ -137,7 +136,7 @@
     <!-- INPUT AREA -->
     <div class="input-area">
       <form id="chat-form" class="input-form">
-        <input type="hidden" name="model" id="form-model" value="gemini-3-flash-preview"/>
+        <input type="hidden" name="model" id="form-model" value="puruboy-flash"/>
         <input type="hidden" name="chat_mode" id="form-mode" value="standard"/>
         <input type="hidden" name="system_prompt" id="form-system-prompt" value=""/>
 
