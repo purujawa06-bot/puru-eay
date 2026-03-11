@@ -1,52 +1,44 @@
-# PurAI Chat — HTMX Project
+# PurAI – Chat App
 
-Website chat modern berbasis **HTMX partials** yang terhubung ke API PurAI (Gemini/GPT streaming).
+Chat interface modern berbasis **HTMX partials + Go** yang terhubung ke API AI PurAI dengan streaming SSE.
 
----
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Backend | Go (stdlib, no framework) |
+| Frontend | HTMX, Vanilla JS |
+| Streaming | SSE (Server-Sent Events) |
+| Markdown | marked.js |
+| Font | Sora + JetBrains Mono |
 
 ## Struktur Project
 
 ```
-purai-chat/
-├── index.html                  # App shell utama
-├── partials/
-│   ├── new-chat.html           # Welcome screen (HTMX swap)
-│   ├── message-user.html       # Template bubble user
-│   ├── message-ai.html         # Template bubble AI
-│   ├── typing.html             # Indikator mengetik
-│   └── error.html              # Pesan error
+purai/
+├── main.go                  # Entry point, router
+├── go.mod
+├── handlers/
+│   └── chat.go              # IndexHandler, ChatSendHandler (SSE proxy)
+├── templates/
+│   └── index.html           # Main HTML template
 └── static/
-    ├── css/
-    │   └── app.css             # Semua styling (dark theme)
-    └── js/
-        ├── app.js              # Logika utama chat
-        └── stream.js           # SSE stream utility
+    ├── css/style.css        # Dark glass mobile UI
+    └── js/app.js            # Streaming chat logic
 ```
-
----
 
 ## Cara Jalankan
 
-### Option 1 — Static Server (direkomendasikan)
-
 ```bash
-# Python 3
-python3 -m http.server 8080
+# 1. Masuk ke folder
+cd purai
 
-# Node.js (npx)
-npx serve .
+# 2. Jalankan server
+go run main.go
 
-# PHP
-php -S localhost:8080
+# 3. Buka browser
+open http://localhost:8080
 ```
-
-Buka: `http://localhost:8080`
-
-### Option 2 — Langsung buka `index.html`
-> ⚠ Streaming SSE mungkin tidak bekerja karena CORS di file:// protocol.
-> Gunakan local server.
-
----
 
 ## API yang Digunakan
 
@@ -55,65 +47,31 @@ POST https://www.puruboy.kozow.com/api/ai/notegpt
 Content-Type: application/json
 
 {
-  "prompt": "pesan user",
+  "prompt": "...",
   "model": "gemini-3-flash-preview",
   "chat_mode": "standard"
 }
 ```
 
-Response: **Server-Sent Events (SSE)** — setiap chunk berformat:
-```
-data: {"text":"..."}
-data: {"text":"","done":true}
-data: {"type":"finish"}
-```
-
----
-
-## Model yang Didukung
-
-| Model ID                  | Nama Tampilan  |
-|---------------------------|----------------|
-| `gemini-3-flash-preview`  | Gemini Flash   |
-| `gemini-2.5-pro-preview`  | Gemini Pro     |
-| `gpt-4o`                  | GPT-4o         |
-
----
+Response berupa SSE stream dengan event:
+- `data: {"text":"..."}` – token teks
+- `data: {"text":"","done":true}` – selesai
+- `data: {"type":"finish"}` – end
 
 ## Fitur
 
-- ✅ Streaming real-time via SSE
-- ✅ Render Markdown (tabel, kode, bold, italic)
-- ✅ Sidebar model picker
-- ✅ Riwayat chat (localStorage)
-- ✅ Suggestion chips
-- ✅ Mobile responsive (sidebar drawer)
-- ✅ Auto-resize textarea
-- ✅ Dark theme dengan aurora glow
-- ✅ HTMX untuk swap partial (new chat)
+- 💬 Streaming real-time token per token
+- 🌙 Dark glass UI, mobile-first (max 480px)
+- 📝 Render Markdown (tabel, kode, list, heading)
+- 🎨 Suggestion chips di welcome screen
+- 📌 Auto-resize textarea
+- ⬇️ Scroll-to-bottom button
+- 🔄 Model selector (Gemini, GPT)
+- ⚡ Tidak perlu framework eksternal
 
----
+## Build Binary
 
-## Kustomisasi
-
-**Ganti warna utama** di `static/css/app.css`:
-```css
---purple: #8b5cf6;   /* Aksen utama */
---cyan:   #22d3ee;   /* Aksen sekunder */
---bg-base: #080b12;  /* Background */
+```bash
+go build -o purai-server .
+./purai-server
 ```
-
-**Ganti API endpoint** di `static/js/app.js`:
-```js
-const API_URL = 'https://www.puruboy.kozow.com/api/ai/notegpt';
-```
-
----
-
-## Teknologi
-
-- [HTMX 1.9](https://htmx.org) — partial swapping
-- [Marked.js 9](https://marked.js.org) — Markdown parsing
-- Vanilla JS — streaming & state
-- CSS custom properties — theming
-- Google Fonts: Sora + JetBrains Mono
