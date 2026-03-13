@@ -132,13 +132,11 @@
 
     <!-- Input Area -->
     <div class="input-area">
-      <form class="input-form" id="chatForm" 
+      <form class="input-form" id="chatForm"
             hx-post="/api/chat"
             hx-target="#messagesWrapper"
             hx-swap="beforeend"
-            hx-on::before-request="onBeforeRequest()"
-            hx-on::after-request="onAfterRequest(event)">
-        <input type="hidden" name="messages" id="messagesInput" />
+            hx-on::after-request="onAfterRequest()">
         <div class="input-wrapper">
           <textarea 
             id="userInput"

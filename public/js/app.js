@@ -4,18 +4,17 @@ let isLoading = false;
 let chatCount = 0;
 
 // ===== DOM REFS =====
-const chatContainer = document.getElementById('chatContainer');
+const chatContainer   = document.getElementById('chatContainer');
 const messagesWrapper = document.getElementById('messagesWrapper');
-const welcomeScreen = document.getElementById('welcomeScreen');
+const welcomeScreen   = document.getElementById('welcomeScreen');
 const typingIndicator = document.getElementById('typingIndicator');
-const userInput = document.getElementById('userInput');
-const messagesInput = document.getElementById('messagesInput');
-const sendBtn = document.getElementById('sendBtn');
-const charCount = document.getElementById('charCount');
-const sidebar = document.getElementById('sidebar');
-const overlay = document.getElementById('overlay');
-const menuBtn = document.getElementById('menuBtn');
-const historyList = document.getElementById('historyList');
+const userInput       = document.getElementById('userInput');
+const sendBtn         = document.getElementById('sendBtn');
+const charCount       = document.getElementById('charCount');
+const sidebar         = document.getElementById('sidebar');
+const overlay         = document.getElementById('overlay');
+const menuBtn         = document.getElementById('menuBtn');
+const historyList     = document.getElementById('historyList');
 
 // ===== SIDEBAR =====
 menuBtn.addEventListener('click', () => {
@@ -27,7 +26,6 @@ function closeSidebar() {
   sidebar.classList.remove('open');
   overlay.classList.add('hidden');
 }
-
 document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
 
 // ===== CHAR COUNT =====
@@ -48,70 +46,83 @@ function handleKeyDown(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     if (!isLoading && userInput.value.trim()) {
-      submitForm();
+      document.getElementById('chatForm').dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true })
+      );
     }
   }
 }
 
-// ===== SUBMIT =====
-function submitForm() {
-  const form = document.getElementById('chatForm');
-  const event = new Event('submit', { bubbles: true, cancelable: true });
-  form.dispatchEvent(event);
-}
+// ===== HTMX: INJECT messages SEBELUM REQUEST DIKIRIM =====
+// htmx:configRequest adalah waktu yang tepat — sebelum form di-serialize
+document.body.addEventListener('htmx:configRequest', (e) => {
+  if (e.target.id !== 'chatForm') return;
 
-// ===== BEFORE REQUEST (HTMX hook) =====
-function onBeforeRequest() {
   const text = userInput.value.trim();
-  if (!text || isLoading) return false;
+
+  // Batalkan jika kosong atau sedang loading
+  if (!text || isLoading) {
+    e.preventDefault();
+    return;
+  }
 
   isLoading = true;
 
-  // Add user message to history
+  // Tambah ke history
   conversationHistory.push({ role: 'user', content: text });
-  messagesInput.value = JSON.stringify(conversationHistory);
 
-  // Show user message in UI
+  // Override parameters HTMX — ini yang akan dikirim sebagai form body
+  e.detail.parameters = {
+    messages: JSON.stringify(conversationHistory)
+  };
+
+  // Jangan override Content-Type — biarkan HTMX pakai urlencoded default
+  delete e.detail.headers['Content-Type'];
+
+  // Tampilkan pesan user di UI
   appendUserMessage(text);
-
-  // Hide welcome, show typing
   hideWelcome();
   typingIndicator.classList.remove('hidden');
 
-  // Clear input
+  // Reset input
   userInput.value = '';
   userInput.style.height = 'auto';
   charCount.textContent = '0 / 4000';
   sendBtn.disabled = true;
 
   scrollToBottom();
-}
+});
 
-// ===== AFTER REQUEST (HTMX hook) =====
-function onAfterRequest(event) {
+// ===== HTMX: SETELAH RESPONSE =====
+function onAfterRequest() {
   isLoading = false;
   sendBtn.disabled = false;
   typingIndicator.classList.add('hidden');
 
-  // Extract assistant text from the newly appended HTML
+  // Simpan response AI ke history
   setTimeout(() => {
-    const allMessages = messagesWrapper.querySelectorAll('.assistant-message');
-    const lastMsg = allMessages[allMessages.length - 1];
-    if (lastMsg) {
-      const content = lastMsg.querySelector('.message-content');
-      if (content) {
-        const text = content.innerText || content.textContent;
-        conversationHistory.push({ role: 'assistant', content: text });
+    const allAI = messagesWrapper.querySelectorAll('.assistant-message');
+    const last  = allAI[allAI.length - 1];
+    if (last && !last.classList.contains('error-message')) {
+      const el = last.querySelector('.message-content');
+      if (el) {
+        conversationHistory.push({
+          role: 'assistant',
+          content: el.innerText || el.textContent
+        });
       }
     }
     updateHistory();
     scrollToBottom();
-  }, 100);
+  }, 80);
 }
+
+// Dipanggil dari hx-on::before-request (dibiarkan kosong — logic ada di configRequest)
+function onBeforeRequest() {}
 
 // ===== APPEND USER MESSAGE =====
 function appendUserMessage(text) {
-  const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const time    = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   const escaped = escapeHtml(text).replace(/\n/g, '<br>');
 
   const div = document.createElement('div');
@@ -130,33 +141,27 @@ function appendUserMessage(text) {
 
   messagesWrapper.appendChild(div);
 
-  // Animate in
-  requestAnimationFrame(() => {
-    div.style.opacity = '0';
-    div.style.transform = 'translateY(10px)';
-    div.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-    requestAnimationFrame(() => {
-      div.style.opacity = '1';
-      div.style.transform = 'translateY(0)';
-    });
-  });
+  div.style.opacity = '0';
+  div.style.transform = 'translateY(10px)';
+  div.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    div.style.opacity = '1';
+    div.style.transform = 'translateY(0)';
+  }));
 }
 
 // ===== HIDE WELCOME =====
 function hideWelcome() {
-  if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
-    welcomeScreen.style.opacity = '0';
-    welcomeScreen.style.transform = 'scale(0.95)';
-    welcomeScreen.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-    setTimeout(() => welcomeScreen.classList.add('hidden'), 300);
-  }
+  if (!welcomeScreen || welcomeScreen.classList.contains('hidden')) return;
+  welcomeScreen.style.opacity = '0';
+  welcomeScreen.style.transform = 'scale(0.96)';
+  welcomeScreen.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  setTimeout(() => welcomeScreen.classList.add('hidden'), 300);
 }
 
 // ===== SCROLL =====
 function scrollToBottom() {
-  setTimeout(() => {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-  }, 100);
+  setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 80);
 }
 
 // ===== SUGGESTIONS =====
@@ -164,22 +169,21 @@ function sendSuggestion(text) {
   userInput.value = text;
   autoResize(userInput);
   charCount.textContent = `${text.length} / 4000`;
-  submitForm();
+  document.getElementById('chatForm').dispatchEvent(
+    new Event('submit', { bubbles: true, cancelable: true })
+  );
 }
 
 // ===== NEW CHAT =====
 function newChat() {
   conversationHistory = [];
   messagesWrapper.innerHTML = '';
-
   welcomeScreen.classList.remove('hidden');
   welcomeScreen.style.opacity = '1';
   welcomeScreen.style.transform = 'none';
-
   userInput.value = '';
   userInput.style.height = 'auto';
   charCount.textContent = '0 / 4000';
-
   closeSidebar();
   chatContainer.scrollTop = 0;
 }
@@ -187,14 +191,11 @@ function newChat() {
 // ===== CLEAR CHAT =====
 function clearChat() {
   if (conversationHistory.length === 0) return;
-
   conversationHistory = [];
   messagesWrapper.innerHTML = '';
-
   welcomeScreen.classList.remove('hidden');
   welcomeScreen.style.opacity = '1';
   welcomeScreen.style.transform = 'none';
-
   chatContainer.scrollTop = 0;
 }
 
@@ -208,14 +209,13 @@ function updateHistory() {
     chatCount++;
   }
 
-  // Update or add current chat item
-  const existing = historyList.querySelector(`[data-chat="${chatCount}"]`);
-  if (!existing) {
-    const label = userMsgs[0].content.slice(0, 32) + (userMsgs[0].content.length > 32 ? '…' : '');
+  if (!historyList.querySelector(`[data-chat="${chatCount}"]`)) {
+    const label = userMsgs[0].content.slice(0, 32) +
+      (userMsgs[0].content.length > 32 ? '…' : '');
     const item = document.createElement('div');
-    item.className = 'history-item';
+    item.className    = 'history-item';
     item.dataset.chat = chatCount;
-    item.innerHTML = `<span class="hist-icon">💬</span><span class="hist-label">${escapeHtml(label)}</span>`;
+    item.innerHTML    = `<span class="hist-icon">💬</span><span class="hist-label">${escapeHtml(label)}</span>`;
     item.addEventListener('click', () => closeSidebar());
     historyList.insertBefore(item, historyList.firstChild);
   }
@@ -223,32 +223,10 @@ function updateHistory() {
 
 // ===== UTILS =====
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(text));
-  return div.innerHTML;
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(text));
+  return d.innerHTML;
 }
-
-// ===== HTMX CONFIG =====
-document.body.addEventListener('htmx:configRequest', (e) => {
-  // Replace form data with JSON-structured body
-  const msg = messagesInput.value;
-  e.detail.parameters = { messages: msg };
-});
-
-document.body.addEventListener('htmx:beforeRequest', (e) => {
-  if (e.target.id !== 'chatForm') return;
-  const text = userInput.value.trim();
-  if (!text && conversationHistory.length === 0) {
-    e.preventDefault();
-  }
-});
-
-// Ensure content type for JSON
-document.body.addEventListener('htmx:configRequest', (e) => {
-  if (e.target.id === 'chatForm') {
-    e.detail.headers['Content-Type'] = 'application/json';
-  }
-});
 
 // ===== INIT =====
 userInput.focus();
