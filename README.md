@@ -1,63 +1,81 @@
-# PurAI – Express.js + HTMX
+# 🌟 PuruAI — Chat Intelligence
 
-Port dari FastAPI Python ke **Node.js + Express + HTMX**.
+Website chat AI modern menggunakan **Express.js + HTMX**, powered by Gemini.
 
-## Struktur Proyek
+## 📋 Fitur
 
-```
-purai-express/
-├── server.js          ← Backend Express (pengganti main.py)
-├── package.json
-├── views/
-│   └── index.html     ← Template HTML (pengganti Jinja2)
-└── public/
-    ├── css/
-    │   └── main.css   ← Design system (tidak berubah)
-    └── js/
-        ├── app.js     ← Chat logic SSE (tidak berubah)
-        └── anti-re.js ← Anti-RE shield (tidak berubah)
-```
+- 💬 Chat real-time dengan AI berbasis Gemini
+- ✨ UI modern dengan animasi halus
+- 📱 Responsive untuk mobile & desktop
+- 🎨 Tema gelap elegan dengan efek glassmorphism
+- 📝 Format Markdown (bold, italic, code, list)
+- 🔄 Riwayat percakapan dalam sesi
+- ⌨️ Typing indicator saat AI memproses
+- 🚀 Lightweight — hanya HTML + JS vanilla (HTMX)
 
-## Instalasi & Menjalankan
+## 🚀 Instalasi
+
+### Prasyarat
+- Node.js v16 atau lebih baru
+- npm / yarn
+
+### Langkah
 
 ```bash
+# 1. Install dependencies
 npm install
+
+# 2. Jalankan server
 npm start
-# atau untuk development (auto-reload):
+
+# 3. Buka browser
+# http://localhost:3000
+```
+
+### Mode Development (auto-reload)
+```bash
 npm run dev
 ```
 
-Buka browser → http://localhost:3000
+## 📁 Struktur Project
 
-## Environment Variables
-
-| Variable       | Default             | Deskripsi                    |
-|----------------|---------------------|------------------------------|
-| `PURAI_SECRET` | random setiap start | HMAC secret untuk token CSRF |
-| `PORT`         | `3000`              | Port server                  |
-
-```bash
-# Contoh production:
-PURAI_SECRET=mysupersecret PORT=8080 npm start
+```
+purai/
+├── server.js          # Express server + API handler
+├── package.json
+├── public/
+│   ├── index.html     # Frontend dengan HTMX
+│   ├── css/
+│   │   └── style.css  # Styling lengkap
+│   └── js/
+│       └── app.js     # JavaScript frontend
+└── README.md
 ```
 
-## Perbandingan Python → Node.js
+## 🔑 Cara Kerja
 
-| FastAPI (Python)         | Express.js (Node.js)           |
-|--------------------------|--------------------------------|
-| `main.py`                | `server.js`                    |
-| `Jinja2Templates`        | `renderTemplate()` (built-in)  |
-| `StaticFiles`            | `express.static()`             |
-| `StreamingResponse`      | `res.write()` + SSE manual     |
-| `hmac.new(...)`          | `crypto.createHmac(...)`       |
-| `hmac.compare_digest()`  | `crypto.timingSafeEqual()`     |
-| `httpx.AsyncClient`      | `node-fetch` (stream)          |
-| `Form(...)`              | `express.urlencoded()`         |
-| `Header(...)`            | `req.headers['x-purai-token']` |
+1. User mengetik pesan di input box
+2. HTMX mengirim POST request ke `/api/chat`
+3. Server mem-forward request ke Gemini API via batchexecute
+4. Response dikembalikan sebagai HTML langsung ke chat
+5. HTMX menyuntikkan HTML ke DOM tanpa refresh halaman
 
-## Catatan
+## ⚙️ Konfigurasi
 
-- Token CSRF TTL: 5 menit (300 detik), refresh otomatis tiap 4 menit
-- Rate limit: 20 request / 60 detik per IP
-- Streaming SSE dari upstream diteruskan langsung ke client
-- Anti-bot & anti-RE logic tidak berubah (file JS sama)
+Server berjalan di port **3000** secara default.
+Ubah dengan environment variable:
+
+```bash
+PORT=8080 npm start
+```
+
+## 🎯 Shortcut Keyboard
+
+| Shortcut | Aksi |
+|----------|------|
+| `Enter` | Kirim pesan |
+| `Shift + Enter` | Baris baru |
+
+---
+
+Made with ❤️ — PuruAI v1.0
