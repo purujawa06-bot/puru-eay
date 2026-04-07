@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puru AI - ChatGPT Clone</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-[#343541] text-white h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <div class="w-64 bg-[#202123] h-full flex flex-col p-2 hidden md:flex">
+        <button class="border border-white/20 rounded-md p-3 text-sm flex items-center gap-3 hover:bg-gray-500/10 transition-colors mb-2">
+            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New Chat
+        </button>
+        <div class="flex-grow"></div>
+        <div class="border-t border-white/20 pt-2">
+            <div class="p-3 text-sm hover:bg-gray-500/10 rounded-md cursor-pointer">Upgrade to Plus</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-grow flex flex-col h-full relative">
+        <!-- Header -->
+        <header class="p-4 border-b border-white/10 text-center font-semibold text-gray-300">
+            Puru AI (puruboy-flash)
+        </header>
+
+        <!-- Chat Container -->
+        <div id="chat-box" class="flex-grow overflow-y-auto p-4 md:px-20 custom-scrollbar">
+            <div class="flex flex-col mb-4 items-start">
+                <div class="bg-gray-700 text-gray-100 rounded-lg py-2 px-4 max-w-[80%]">
+                    Halo! Saya Puru AI. Ada yang bisa saya bantu hari ini?
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 md:px-20 border-t border-white/10 bg-[#343541]">
+            <form hx-post="/chat" 
+                  hx-target="#chat-box" 
+                  hx-swap="beforeend" 
+                  hx-on::after-request="this.reset()"
+                  class="relative flex items-center">
+                <input type="text" 
+                       name="prompt" 
+                       placeholder="Send a message..." 
+                       class="w-full bg-[#40414f] text-white rounded-xl py-3 px-4 pr-12 focus:outline-none focus:ring-1 focus:ring-white/20 shadow-lg"
+                       required>
+                <button type="submit" class="absolute right-3 p-1 rounded-md text-gray-400 hover:bg-gray-900 transition-colors">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </form>
+            <p class="text-[10px] text-gray-400 text-center mt-2">
+                Puru AI may provide inaccurate information. Check important info.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Auto scroll to bottom when new content is added
+        const chatBox = document.getElementById('chat-box');
+        const observer = new MutationObserver(() => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+        observer.observe(chatBox, { childList: true });
+    </script>
+</body>
+</html>
