@@ -45,6 +45,10 @@
             <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             New Chat
         </button>
+        <button id="clear-chat" class="border border-white/20 rounded-md p-3 text-sm flex items-center gap-3 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50 transition-colors mb-2">
+            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            Clear Chat
+        </button>
         <div class="flex-grow"></div>
         <div class="border-t border-white/20 pt-2">
             <div class="p-3 text-sm hover:bg-gray-500/10 rounded-md cursor-pointer">Upgrade to Plus</div>
@@ -108,12 +112,77 @@
     </div>
 
     <script>
-        // Auto scroll to bottom when new content is added
         const chatBox = document.getElementById('chat-box');
+        const clearChatBtn = document.getElementById('clear-chat');
+        const STORAGE_KEY = 'chat_history_v1';
+
+        // Initial welcome message template
+        const welcomeMessage = `
+            <div class="flex flex-col mb-4 items-start">
+                <div class="bg-gray-700 text-gray-100 rounded-lg py-2 px-4 max-w-[80%]">
+                    Halo! Saya Puru AI. Ada yang bisa saya bantu hari ini?
+                </div>
+            </div>
+        `;
+
+        // Function to save chat history
+        const saveChatHistory = () => {
+            try {
+                const messages = Array.from(chatBox.children)
+                    .filter(child => child.id !== 'loading-indicator')
+                    .map(child => child.outerHTML)
+                    .join('');
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+            } catch (err) {
+                console.error('Error saving to localStorage:', err);
+            }
+        };
+
+        // Function to load chat history
+        const loadChatHistory = () => {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const messagesHtml = JSON.parse(savedData);
+                    const indicator = document.getElementById('loading-indicator');
+                    
+                    // Create a temporary container to hold the HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = messagesHtml;
+                    
+                    // Clear current box and append saved messages then indicator
+                    chatBox.innerHTML = '';
+                    while (tempDiv.firstChild) {
+                        chatBox.appendChild(tempDiv.firstChild);
+                    }
+                    chatBox.appendChild(indicator);
+                }
+            } catch (err) {
+                console.error('Error loading from localStorage:', err);
+                localStorage.removeItem(STORAGE_KEY); // Clear corrupted data
+            }
+        };
+
+        // MutationObserver to handle auto-scroll and auto-save
         const observer = new MutationObserver(() => {
             chatBox.scrollTop = chatBox.scrollHeight;
+            saveChatHistory();
         });
+
         observer.observe(chatBox, { childList: true });
+
+        // Clear chat functionality
+        clearChatBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the entire chat history?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                const indicator = document.getElementById('loading-indicator').cloneNode(true);
+                chatBox.innerHTML = welcomeMessage;
+                chatBox.appendChild(indicator);
+            }
+        });
+
+        // Initialize
+        window.addEventListener('load', loadChatHistory);
     </script>
 </body>
 </html>
